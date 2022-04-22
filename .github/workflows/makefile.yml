@@ -25,4 +25,5 @@ jobs:
     - name: Upload generated paper
       uses: actions/upload-artifact@v3
       with:
+        name: generated
         path: generated/*
