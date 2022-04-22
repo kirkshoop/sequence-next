@@ -16,6 +16,8 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - uses: nikeee/setup-pandoc@v1
+
     - name: Build paper
       run: make
 
