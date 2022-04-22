@@ -7,19 +7,14 @@ on:
     branches: [ main ]
 
 jobs:
-  prebuild-linux:
-
-    runs-on: ubuntu-latest
-    
-    steps:
-   - name: Install xetex
-     run: sudo apt-get install texlive-xetex
-
-build:
+  build:
 
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install xetex
+      run: sudo apt-get install texlive-xetex
+
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
