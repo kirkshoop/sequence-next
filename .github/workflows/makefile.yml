@@ -15,6 +15,9 @@ jobs:
     - name: Install xetex
       run: sudo apt-get install texlive-xetex
 
+    - name: Install plantuml
+      run: sudo apt-get install plantuml
+
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
