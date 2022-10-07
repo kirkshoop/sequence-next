@@ -2,9 +2,11 @@ name: Makefile CI
 
 on:
   push:
-    branches: [$default-branch]
+    branches: 
+      - main
   pull_request:
-    branches: [$default-branch]
+    branches:
+      - main
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -36,8 +38,8 @@ jobs:
 
     - name: Build paper
       run: |
-        make sequences.html \
-        && make sequences.pdf
+        make html \
+        && make pdf
 
     - name: Setup Pages
       uses: actions/configure-pages@v2
