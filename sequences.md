@@ -445,16 +445,28 @@ Marble diagrams are often used to describe algorithms for asynchronous sequences
 ```plantuml
 caption marble diagram for ""then_each""
 left to right direction
-package then_each: {
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (|)
-rectangle ""then_each([](auto v){return v+1;})""
-(^ ) -- (11)
-(11) -- (21)
-(21) -- (31)
-(31) -- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """then_each([](auto v){return v+1;})""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o11 as "11"
+usecase o21 as "21"
+usecase o31 as "31"
+card oE as "|" #transparent
+oS -- o11
+o11 -- o21
+o21 -- o31
+o31 -- oE
 }
 ```
 
@@ -465,15 +477,26 @@ rectangle ""then_each([](auto v){return v+1;})""
 ```plantuml
 caption marble diagram for ""filter_each""
 left to right direction
-package filter_each: {
-(^) -- (10)
-(10) -- (20)
-(20) --- (30)
-(30) -- (|)
-rectangle ""filter_each([](auto v){return v != 20;})""
-(^ ) -- (10 )
-(10 ) ---- (30 )
-(30 ) -- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """filter_each([](auto v){return v != 20;})""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+usecase o30 as "30"
+card oE as "|" #transparent
+oS -- o10
+o10 --- o30
+o30 -- oE
 }
 ```
 
@@ -484,14 +507,24 @@ rectangle ""filter_each([](auto v){return v != 20;})""
 ```plantuml
 caption marble diagram for ""take_while""
 left to right direction
-package take_while: {
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (|)
-rectangle ""take_while([](auto v){return v != 20;})""
-(^ ) -- (10 )
-(10 ) -- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """take_while([](auto v){return v != 20;})""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+card oE as "|" #transparent
+oS -- o10
+o10 -- oE
 }
 ```
 
@@ -502,17 +535,30 @@ rectangle ""take_while([](auto v){return v != 20;})""
 ```plantuml
 caption marble diagram for ""distinct""
 left to right direction
-package distinct: {
-(^) -- (10)
-(10) -- (20)
-(20) -- (20 )
-(20 ) -- (30)
-(30) -- (|)
-rectangle ""distinct()""
-(^ ) -- (10 )
-(10 ) -- ( 20 )
-( 20 ) --- (30 )
-(30 ) -- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20a as "20"
+usecase i20b as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20a
+i20a -- i20b
+i20b -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """distinct()""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+usecase o20 as "20"
+usecase o30 as "30"
+card oE as "|" #transparent
+oS -- o10
+o10 -- o20
+o20 --- o30
+o30 -- oE
 }
 ```
 
@@ -523,13 +569,22 @@ rectangle ""distinct()""
 ```plantuml
 caption marble diagram for ""ignore_all""
 left to right direction
-package ignore_all: {
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (|)
-rectangle ""ignore_all()""
-(^ ) ----- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """ignore_all()""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+card oE as "|" #transparent
+oS ----- oE
 }
 ```
 
@@ -540,12 +595,19 @@ rectangle ""ignore_all()""
 ```plantuml
 caption marble diagram for ""generate_each""
 left to right direction
-package generate_each: {
-rectangle ""generate_each([v=0]() mutable {return v+=10;})""
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (...)
+rectangle {
+usecase anc as " " #transparent;line:transparent
+card fn as """generate_each(""\n""  [v=0]() mutable {""\n""    return v+=10;""\n""  })""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+usecase o20 as "20"
+usecase o30 as "30"
+card oE as "|" #transparent
+oS -- o10
+o10 -- o20
+o20 -- o30
+o30 --- oE
 }
 ```
 
@@ -556,12 +618,19 @@ rectangle ""generate_each([v=0]() mutable {return v+=10;})""
 ```plantuml
 caption marble diagram for ""iotas""
 left to right direction
-package iotas: {
-rectangle ""iotas(10, 30, 10)""
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (|)
+rectangle {
+usecase anc as " " #transparent;line:transparent
+card fn as """iotas(10, 30, 10)""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+usecase o20 as "20"
+usecase o30 as "30"
+card oE as "|" #transparent
+oS -- o10
+o10 -- o20
+o20 -- o30
+o30 --- oE
 }
 ```
 
@@ -574,18 +643,34 @@ rectangle ""iotas(10, 30, 10)""
 ```plantuml
 caption marble diagram for ""merge_each""
 left to right direction
-package merge_each: {
-(^) -- (10) 
-(10) -- (|)
-(^ ) --- (20) 
-(20) ---- (| )
-( ^ ) ---- (30) 
-(30) -- ( | )
-rectangle ""merge_each(a, b, c)""
-( ^) -- (10 )
-(10 ) -- (20 )
-(20 ) -- (30 )
-(30 ) --- ( |)
+rectangle {
+card iS0 as "a:" #transparent;line:transparent 
+usecase i10 as "10"
+card iE0 as "|" #transparent
+card iS1 as "b:" #transparent;line:transparent 
+usecase i20 as "20"
+card iE1 as "|" #transparent
+card iS2 as "c:" #transparent;line:transparent 
+usecase i30 as "30"
+card iE2 as "|" #transparent
+iS0 -- i10
+i10 -- iE0
+iS1 --- i20
+i20 ---- iE1
+iS2 ---- i30
+i30 -- iE2
+usecase anc as " " #transparent;line:transparent
+card fn as """merge_each(a, b, c)""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+usecase o20 as "20"
+usecase o30 as "30"
+card oE as "|" #transparent
+oS -- o10
+o10 -- o20
+o20 -- o30
+o30 --- oE
 }
 ```
 
@@ -596,16 +681,28 @@ rectangle ""merge_each(a, b, c)""
 ```plantuml
 caption marble diagram for ""scan_each""
 left to right direction
-package scan_each: {
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (|)
-rectangle ""scan_each(3, [](s, v){return s+v;})""
-(^ ) -- (13)
-(13) -- (33)
-(33) -- (63)
-(63) -- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """scan_each(3, [](s, v){return s+v;})""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o13 as "13"
+usecase o33 as "33"
+usecase o63 as "63"
+card oE as "|" #transparent
+oS -- o13
+o13 -- o33
+o33 -- o63
+o63 -- oE
 }
 ```
 
@@ -616,16 +713,28 @@ rectangle ""scan_each(3, [](s, v){return s+v;})""
 ```plantuml
 caption marble diagram for ""sample_all""
 left to right direction
-package sample_all: {
-(^) -- (10)
-(10) -- (20)
-(20) -- (30)
-(30) -- (40)
-(40) -- (|)
-rectangle ""sample_all(20ms)""
-(^ ) --- (20 )
-(20 ) --- (40 )
-(40 ) -- (| )
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+usecase i40 as "40"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- i40
+i40 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """sample_all(20ms)""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o20 as "20"
+usecase o40 as "40"
+card oE as "|" #transparent
+oS --- o20
+o20 --- o40
+o40 -- oE
 }
 ```
 ## timeout_each
@@ -635,13 +744,23 @@ rectangle ""sample_all(20ms)""
 ```plantuml
 caption marble diagram for ""timeout_each""
 left to right direction
-package timeout_each: {
-(^) -- (10)
-(10) -- (20)
-(20) --- (|)
-rectangle ""timeout_each(20ms)""
-(^ ) -- (10 )
-(10 ) -- (20 )
-(20 ) -- (X)
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 --- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """timeout_each(20ms)""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o10 as "10"
+usecase o20 as "20"
+card oE as "X" #transparent
+oS -- o10
+o10 -- o20
+o20 -- oE
 }
 ```
