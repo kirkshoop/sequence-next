@@ -16,7 +16,7 @@ Introduction
 
 This was the end goal all along.
 
-_Sender_/_Receiver_, as described in [@P2300R5], can represent a single asynchronous value. A generator of `range<Sender>` can represent a set of asynchronous values, where the range generates each sender synchronously. This paper is about _Senders_ that can asynchronously send `0..N` values and some of the algorithms, for those _Senders_, that operate on an asynchronous value sequence.
+_Sender_/_Receiver_, as described in [@P2300R5], can represent a single asynchronous value. Today, using a range-v3 generator, a `range<Sender>` can represent a set of asynchronous values, where the range generates each sender synchronously. This paper is about _Senders_ that can asynchronously provide senders for `0..N` values and describes some of the algorithms, that operate on an asynchronous value sequence, where the sender for each value is provided asynchronously.
 
 ## Basic polling
 
