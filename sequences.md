@@ -56,6 +56,8 @@ sync_wait(itoas(1, 3000000) |
 
 ## Web Requests
 
+This is 'ported' from a twitter application.
+
 ```cpp
 auto requesttwitterstream = twitter_stream_reconnection(
   defer([=](){
@@ -99,6 +101,7 @@ auto twitter_stream_reconnection =
 
 ## User Interface
 
+This is 'ported' from a twitter application.
 ### Apply a set of actions to a model
 
 ```cpp
@@ -169,7 +172,7 @@ end
 
 ## `set_next()`
 
-`set_next` is a new customization point object for the receiver. `set_next` applies algorithms to the given sender of a value. a sequence-receiver concept subsumes a receiver concept. a sequence-receiver is required to only produce a void `set_value` to signal the end of the sequence. 
+`set_next` is a new customization point object for the receiver. `set_next` applies algorithms to the given sender of a value. a sequence-receiver concept subsumes a receiver concept. a sequence-receiver is required to only produce a void `set_value` to signal the end of the sequence. a sequence-receiver is required to provide `set_next` for all the value senders produced by the sequence operation. 
 
 A sequence operation calls `set_next(receiver, valueSender)` with a sender that will produce the next value. `set_next` applies algorithms to the `valueSender` and returns the resulting sender.
 
@@ -177,7 +180,7 @@ A sequence operation connects and starts the sender returned from each call to `
 
 For lock-step sequences, the receiver that the sequence operation connected the sender to will call `set_next` from the 'set_value` completion.
 
-To prevent stack overflow, there needs to be a trampoline scheduler applied to each value sender. A tail-sender will be defined in a separate paper that can be used instead of a scheduler to stop stack overflow.
+> NOTE: To prevent stack overflow, there needs to be a trampoline scheduler applied to each value sender. A tail-sender will be defined in a separate paper that can be used instead of a scheduler to stop stack overflow.
 
 ## Sequences
 
@@ -430,93 +433,215 @@ deactivate pdc
 end
 ```
 
-## Algorithms
+Algorithms
+==========
 
-### then_each
+Marble diagrams are often used to describe algorithms for asynchronous sequences.
+
+## then_each
+
+`then_each` applies the given function to each input value and emits the result of the given function.
 
 ```plantuml
+caption marble diagram for ""then_each""
 left to right direction
 package then_each: {
+(^) -- (10)
 (10) -- (20)
 (20) -- (30)
 (30) -- (|)
 rectangle ""then_each([](auto v){return v+1;})""
+(^ ) -- (11)
 (11) -- (21)
 (21) -- (31)
 (31) -- (| )
 }
 ```
 
-### filter_each
+## filter_each
+
+`filter_each` applies the given predicate to each input value and only emits the value if the given predicate returns `true`.
 
 ```plantuml
+caption marble diagram for ""filter_each""
 left to right direction
 package filter_each: {
+(^) -- (10)
 (10) -- (20)
 (20) --- (30)
 (30) -- (|)
 rectangle ""filter_each([](auto v){return v != 20;})""
+(^ ) -- (10 )
 (10 ) ---- (30 )
 (30 ) -- (| )
 }
 ```
 
-### generate_each
+## take_while
+
+`take_while` applies the given predicate to each input value and if the given predicate returns `true` cancels the input and emits no more values.
 
 ```plantuml
-left to right direction
-package generate_each: {
-rectangle ""generate_each([v=0]() mutable {return v+=10;})""
-(10) -- (20)
-(20) --- (30)
-(30) -- (|)
-}
-```
-
-### iotas
-
-```plantuml
-left to right direction
-package iotas: {
-rectangle ""iotas(10, 30, 10)""
-(10) -- (20)
-(20) --- (30)
-(30) -- (|)
-}
-```
-
-### fork
-
-### merge_each
-
-### scan_each
-
-### ignore_all
-
-```plantuml
-left to right direction
-package ignore_all: {
-(10) -- (20)
-(20) --- (30)
-(30) -- (|)
-rectangle ""ignore_all()""
-}
-```
-
-### take_while
-
-```plantuml
+caption marble diagram for ""take_while""
 left to right direction
 package take_while: {
+(^) -- (10)
 (10) -- (20)
-(20) --- (30)
+(20) -- (30)
 (30) -- (|)
 rectangle ""take_while([](auto v){return v != 20;})""
+(^ ) -- (10 )
 (10 ) -- (| )
 }
 ```
 
-### sample_all
+## distinct
 
-### timeout_each
+`distinct` compares each input value to a stored copy of the previous input value, if the input value and the previous input value are not the same replace the stored copy with the input value and emit the input value, otherwise do not emit the input value.
 
+```plantuml
+caption marble diagram for ""distinct""
+left to right direction
+package distinct: {
+(^) -- (10)
+(10) -- (20)
+(20) -- (20 )
+(20 ) -- (30)
+(30) -- (|)
+rectangle ""distinct()""
+(^ ) -- (10 )
+(10 ) -- ( 20 )
+( 20 ) --- (30 )
+(30 ) -- (| )
+}
+```
+
+## ignore_all
+
+`ignore_all` does not emit any input values. This converts a sequence of values to a sender-of-void that can be passed to `sync_wait()`, etc..
+
+```plantuml
+caption marble diagram for ""ignore_all""
+left to right direction
+package ignore_all: {
+(^) -- (10)
+(10) -- (20)
+(20) -- (30)
+(30) -- (|)
+rectangle ""ignore_all()""
+(^ ) ----- (| )
+}
+```
+
+## generate_each
+
+`generate_each` repeatedly calls the given function and emits the result value.
+
+```plantuml
+caption marble diagram for ""generate_each""
+left to right direction
+package generate_each: {
+rectangle ""generate_each([v=0]() mutable {return v+=10;})""
+(^) -- (10)
+(10) -- (20)
+(20) -- (30)
+(30) -- (...)
+}
+```
+
+## iotas
+
+`iotas` produces a sequence of values from the given first value to the given last value with the given increment applied to each value emitted to get the next value to emit.
+
+```plantuml
+caption marble diagram for ""iotas""
+left to right direction
+package iotas: {
+rectangle ""iotas(10, 30, 10)""
+(^) -- (10)
+(10) -- (20)
+(20) -- (30)
+(30) -- (|)
+}
+```
+
+## fork
+
+## merge_each
+
+`merge_each` takes multiple input sequences and merges them into a single output sequence.
+
+```plantuml
+caption marble diagram for ""merge_each""
+left to right direction
+package merge_each: {
+(^) -- (10) 
+(10) -- (|)
+(^ ) --- (20) 
+(20) ---- (| )
+( ^ ) ---- (30) 
+(30) -- ( | )
+rectangle ""merge_each(a, b, c)""
+( ^) -- (10 )
+(10 ) -- (20 )
+(20 ) -- (30 )
+(30 ) --- ( |)
+}
+```
+
+## scan_each
+
+`scan_each` is like a reduce, but emits the state after each change.
+
+```plantuml
+caption marble diagram for ""scan_each""
+left to right direction
+package scan_each: {
+(^) -- (10)
+(10) -- (20)
+(20) -- (30)
+(30) -- (|)
+rectangle ""scan_each(3, [](s, v){return s+v;})""
+(^ ) -- (13)
+(13) -- (33)
+(33) -- (63)
+(63) -- (| )
+}
+```
+
+## sample_all
+
+`sample_all` emits the most recent stored copy of the most recent input value at the frequency determined by the given interval.
+
+```plantuml
+caption marble diagram for ""sample_all""
+left to right direction
+package sample_all: {
+(^) -- (10)
+(10) -- (20)
+(20) -- (30)
+(30) -- (40)
+(40) -- (|)
+rectangle ""sample_all(20ms)""
+(^ ) --- (20 )
+(20 ) --- (40 )
+(40 ) -- (| )
+}
+```
+## timeout_each
+
+`timeout_each` completes the sequence with a `timeout_error` if any two input values are separated by more than the given interval.
+
+```plantuml
+caption marble diagram for ""timeout_each""
+left to right direction
+package timeout_each: {
+(^) -- (10)
+(10) -- (20)
+(20) --- (|)
+rectangle ""timeout_each(20ms)""
+(^ ) -- (10 )
+(10 ) -- (20 )
+(20 ) -- (X)
+}
+```
