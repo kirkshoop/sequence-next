@@ -29,6 +29,16 @@ jobs:
     - name: Install xetex
       run: sudo apt-get install texlive-xetex
 
+    - name: download, validate, install plantuml and its dependencies
+      run: |
+        curl -o plantuml.jar -L https://github.com/plantuml/plantuml/releases/download/v1.2022.9/plantuml-1.2022.9.jar
+        echo "8ca014b55d39707c2bb4cdec3686ba96995379d3  plantuml.jar" | sha1sum -c -
+        mv plantuml.jar /opt/plantuml.jar
+        mkdir -p "$HOME/.local/bin"
+        echo $'#!/bin/sh\n\njava -jar '/opt/plantuml.jar' ${@}' >> "$HOME/.local/bin/plantuml"
+        chmod +x "$HOME/.local/bin/plantuml"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        sudo apt-get install -y graphviz
     - name: Install plantuml
       run: sudo apt-get install plantuml
 
