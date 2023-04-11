@@ -1,3 +1,4 @@
 [submodule "wg21"]
 	path = wg21
-	url = https://github.com/mpark/wg21.git
+	url = https://github.com/kirkshoop/wg21.git
+	branch = addplantuml

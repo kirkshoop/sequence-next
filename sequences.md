@@ -16,7 +16,21 @@ Introduction
 
 This was the end goal all along.
 
-_Sender_/_Receiver_, as described in [@P2300R5], can represent a single asynchronous value. Today, using a range-v3 generator, a `range<Sender>` can represent a set of asynchronous values, where the range generates each sender synchronously. This paper is about _Senders_ that can asynchronously provide senders for `0..N` values and describes some of the algorithms, that operate on an asynchronous value sequence, where the sender for each value is provided asynchronously.
+
+_Sender_/_Receiver_, as described in [@P2300R5], can represent a single asynchronous value. 
+
+
+Today, using a range-v3 generator, a `range<Sender>` can represent a set of asynchronous values, where the range generates each sender synchronously. 
+
+
+This paper is about sequence-senders that can asynchronously provide `0..N` value-senders. This paper also describes some of the algorithms that operate on sequence-sender.
+
+
+Some of the features provided by this design are: 
+
+ - back-pressure, which slows down chatty producers
+ - no-allocations, by default
+ - parallel value senders
 
 ## Basic polling
 
@@ -38,11 +52,11 @@ sync_wait(generate_each(&::getchar) |
 ```cpp
 auto counters = std::map<std::thread::id, std::ptrdiff_t>{};
 sync_wait(itoas(1, 3000000) |
-  fork(pool, [](sender auto forked){
+  on_each(pool, fork([](sender auto forked){
     return forked | then_each([](int v){
       return std::this_thread::get_id();
     });
-  }) |
+  })) |
   then_each([&counters](std::thread::id tid) { 
     ++counters[tid];
   }) |
@@ -60,21 +74,23 @@ This is 'ported' from a twitter application.
 
 ```cpp
 auto requesttwitterstream = twitter_stream_reconnection(
-  defer([=](){
+  defer_construction([=](){
     auto url = oauth2SignUrl("https://stream.twitter...");
     return http.create(http_request{url, method, {}, {}}) |
       then_each([](http_response r){
         return r.body.chunks;
       }) |
-      merge_all();
+      merge_each();
   }));
 ```
 
 ### Connect to a firehose and parse
 
 ```cpp
-auto tweets = twitterrequest(tweetthread, http) |
-  parsetweets(poolthread, tweetthread) |
+struct Tweet;
+
+auto tweets = requesttwitterstream |
+  parsetweets(poolthread) |
   publish_all(); // share
 ```
 
@@ -95,33 +111,99 @@ auto twitter_stream_reconnection =
         }
         return error<string>(ep);
       }) |
-      repeat_forever();
+      repeat_always();
   };
 ```
 
 ## User Interface
 
 This is 'ported' from a twitter application.
-### Apply a set of actions to a model
+
+### Build a set of reducers
 
 ```cpp
-auto models = iterate(actions) |
-  merge_each()|
-  scan_each(Model{}, [=](Model& m, auto f){
-    auto r = f(m);
-    return r;
+struct Model;
+using Reducer = std::function<Model(Model&)>;
+
+vector<any_sender<Reducer>> reducers;
+
+// produce side-effect of dumping text to terminal
+reducers.push_back(
+  tweets | 
+  then_each([](const Tweet& tweet) -> Reducer {
+    return [=](Model&& model) -> Model {
+      auto text = tweet.dump();
+      cout << text << "\r\n";
+      return std::move(model);
+    };
+  });
+
+// group tweets, by the timestamp_ms value
+reducers.push_back(
+  tweets |
+  then_each([](const Tweet& tweet) -> Reducer {
+    return [=](Model&& model) -> Model {
+        auto ts = timestamp_ms(tweet);
+        update_counts_at(model.counts_by_timestamp, ts);
+        return std::move(model);
+    };
+  });
+
+// group tweets, by the local time that they arrived
+reducers.push_back(
+  tweets |
+  then_each([](const Tweet& tweet) -> Reducer {
+    return [](Model&& model) -> Model {
+        update_counts_at(model.counts_by_arrival, system_clock::now());
+        return std::move(model);
+    };
+  });
+```
+
+### Apply a set of reducers to a model
+
+```cpp
+// merge many sequences of reducers 
+// into one sequence of reducers
+// and order them in the uithread
+auto actions = on(uithread, iterate(reducers) | merge_each());
+
+auto models = actions |
+  // when each reducer arrives
+  // apply the reducer to the Model 
+  scan_each(Model{}, [=](Model&& m, Reducer rdc){
+    auto newModel = rdc(std::move(m));
+    return newModel;
   }) |
-  sample_all(200ms, uithread) |
+  // every 200ms emit the latest Model
+  sample_all(200ms) |
   publish_all(); // share
+```
+
+### Build a set of renderers
+
+```cpp
+vector<any_sender<void>> renderers;
+
+auto on_draw = screen.when_render(just()) |
+    with_latest_from(models);
+
+renderers.push_back(
+  on_draw |
+  then_each(render_tweets_window));
+
+renderers.push_back(
+  on_draw |
+  then_each(render_counts_window));
 ```
 
 ### Apply a set of renderers to a model
 
 ```cpp
 async_scope scope;
-scope.spawn(on(uithread, iterate(renderers) |
+scope.spawn(iterate(renderers) |
   merge_each() | 
-  ignore_all()));
+  ignore_all());
 
 ui.loop();
 scope.request_stop();
@@ -635,6 +717,37 @@ o30 --- oE
 ```
 
 ## fork
+
+`fork` takes values from the input sequence and emits them in parallel on the execution-context provided by the receiver's environment.
+
+```plantuml
+caption marble diagram for ""fork""
+left to right direction
+rectangle {
+card iS as "in:" #transparent;line:transparent 
+usecase i10 as "10"
+usecase i20 as "20"
+usecase i30 as "30"
+card iE as "|" #transparent
+iS -- i10
+i10 -- i20
+i20 -- i30
+i30 -- iE
+usecase anc as " " #transparent;line:transparent
+card fn as """fork([last = now + 30ms](sender auto forked){""\n""  return forked | then_each([](int v){""\n""    sleep_until(last);""\n""    return v+1;""\n""  });""\n""})""" 
+anc -[hidden]-- fn
+card oS as "out:" #transparent;line:transparent
+usecase o11 as "---\nthrd0: sleeping\n---\n"
+usecase o21 as "---\nthrd0: sleeping\n---\nthrd1: sleeping\n---\n"
+usecase o31 as "---\nthrd0: 11""      ""\n---\nthrd1: 21""      ""\n---\nthrd2: 31""      ""\n---\n"
+card oE as "|" #transparent
+oS -- o11
+o11 -- o21
+o21 -- o31
+o31 -- oE
+}
+```
+
 
 ## merge_each
 
