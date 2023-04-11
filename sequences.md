@@ -525,6 +525,7 @@ Marble diagrams are often used to describe algorithms for asynchronous sequences
 `then_each` applies the given function to each input value and emits the result of the given function.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""then_each""
 left to right direction
 rectangle {
@@ -557,6 +558,7 @@ o31 -- oE
 `filter_each` applies the given predicate to each input value and only emits the value if the given predicate returns `true`.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""filter_each""
 left to right direction
 rectangle {
@@ -587,6 +589,7 @@ o30 -- oE
 `take_while` applies the given predicate to each input value and if the given predicate returns `true` cancels the input and emits no more values.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""take_while""
 left to right direction
 rectangle {
@@ -615,6 +618,7 @@ o10 -- oE
 `distinct` compares each input value to a stored copy of the previous input value, if the input value and the previous input value are not the same replace the stored copy with the input value and emit the input value, otherwise do not emit the input value.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""distinct""
 left to right direction
 rectangle {
@@ -649,6 +653,7 @@ o30 -- oE
 `ignore_all` does not emit any input values. This converts a sequence of values to a sender-of-void that can be passed to `sync_wait()`, etc..
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""ignore_all""
 left to right direction
 rectangle {
@@ -675,6 +680,7 @@ oS ----- oE
 `generate_each` repeatedly calls the given function and emits the result value.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""generate_each""
 left to right direction
 rectangle {
@@ -698,6 +704,7 @@ o30 --- oE
 `iotas` produces a sequence of values from the given first value to the given last value with the given increment applied to each value emitted to get the next value to emit.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""iotas""
 left to right direction
 rectangle {
@@ -721,6 +728,7 @@ o30 --- oE
 `fork` takes values from the input sequence and emits them in parallel on the execution-context provided by the receiver's environment.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""fork""
 left to right direction
 rectangle {
@@ -754,6 +762,7 @@ o31 -- oE
 `merge_each` takes multiple input sequences and merges them into a single output sequence.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""merge_each""
 left to right direction
 rectangle {
@@ -792,6 +801,7 @@ o30 --- oE
 `scan_each` is like a reduce, but emits the state after each change.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""scan_each""
 left to right direction
 rectangle {
@@ -824,6 +834,7 @@ o63 -- oE
 `sample_all` emits the most recent stored copy of the most recent input value at the frequency determined by the given interval.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""sample_all""
 left to right direction
 rectangle {
@@ -855,6 +866,7 @@ o40 -- oE
 `timeout_each` completes the sequence with a `timeout_error` if any two input values are separated by more than the given interval.
 
 ```plantuml
+!pragma layout smetana
 caption marble diagram for ""timeout_each""
 left to right direction
 rectangle {
