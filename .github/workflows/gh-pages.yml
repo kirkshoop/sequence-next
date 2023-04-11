@@ -10,9 +10,8 @@ on:
       - main
 
 jobs:
-  deployment:
+  build:
     runs-on: ubuntu-latest
-    environment: deployment
     steps:
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -39,10 +38,22 @@ jobs:
       - name: build pdf
         run: |
           make pdf
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./generated
-          commit_message: "Deploy Docs: ${{ github.event.head_commit.message }}"
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v2
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: generated
+
+  deploy:
+    environment:
+      name: deployment
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
