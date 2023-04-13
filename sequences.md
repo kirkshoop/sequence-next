@@ -8,6 +8,8 @@ audience:
 author:
   - name: Kirk Shoop
     email: <kirk.shoop@gmail.com>
+  - name: Maikel Nadolski
+    email: <maikel.nadolski@gmail.com>
 toc: true
 ---
 
