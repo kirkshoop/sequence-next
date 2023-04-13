@@ -16,21 +16,15 @@ Introduction
 
 This was the end goal all along.
 
+`std::execution`, as described in [@P2300R5], introduced the sender and receiver concepts which represent and compose asynchronous operations.
+These abstractions provide a powerful mechanism for building composable and efficient asynchronous code. 
 
-_Sender_/_Receiver_, as described in [@P2300R5], can represent a single asynchronous value. 
+Currently, by employing a range-v3 generator, a `range<Sender>` can represent a group of asynchronous values that generate each sender synchronously. Nevertheless, it is unable to represent potentially infinite sequences of values that might arrive in parallel. Thus, this proposal proposes to broaden the existing sender and receiver concepts by incorporating the sequence sender concept. It is a sender that emits a sequence of values over time.
 
+This paper also elaborates on some of the algorithms that operate on sequence senders. Among the features provided by this design are back-pressure, which decelerates chatty producers, no-allocations by default, and parallel value senders.
 
-Today, using a range-v3 generator, a `range<Sender>` can represent a set of asynchronous values, where the range generates each sender synchronously. 
-
-
-This paper is about sequence-senders that can asynchronously provide `0..N` value-senders. This paper also describes some of the algorithms that operate on sequence-sender.
-
-
-Some of the features provided by this design are: 
-
- - back-pressure, which slows down chatty producers
- - no-allocations, by default
- - parallel value senders
+Examples
+========
 
 ## Basic polling
 
@@ -210,6 +204,22 @@ scope.request_stop();
 sync_wait(scope.on_empty());
 ```
 
+## Async Resources
+
+The proposal D0000R0 (TBD), introduces three customization point objects, `async_resource::open`, `async_resource_token::close` and `async_resource::run`, which define async resources within the sender and receiver framework.
+`async_resource::open` returns a sender that completes with a handle to the acquired resource and is used as a channel to perform any user code on the acquired resource.
+The `async_resource_token::close` customization point object completes when the resource have been released and `async_resource::run` does the actual work of acquiring and releasing the resource.
+Both `async_resource::open` and `async_resource_token::close` merely act as signals to start either operation.
+`async_resource::run` returns a sender of no value and completes when an acquired resource have been released.
+When the `async_resource::run` sender is stopped or an error occurs, it releases any acquired resources.
+Combining the three customization point objects D0000R0 proposes an `use_resources` algorithm which provides a safe way to acquire and release resources in a concurrent environment.
+
+However, using sequence-senders, we can simplify this model since sequence-senders naturally provide an additional value channel and an opportunity to start a final operation upon completion of the sequence.
+In this case, only one customization point object, `async_resource::run`, would be needed to safely use resources in a concurrent environment.
+`async_resource::run` could return a sequence sender that sends only one value, which is the handle to the acquired resource.
+Whenever the sequence sender completes, it would automatically release the acquired resource.
+
+
 Design
 ======
 
@@ -252,17 +262,36 @@ endsplit
 end
 ```
 
-## `set_next()`
+## Sequence Receiver
 
-`set_next` is a new customization point object for the receiver. `set_next` applies algorithms to the given sender of a value. a sequence-receiver concept subsumes a receiver concept. a sequence-receiver is required to only produce a void `set_value` to signal the end of the sequence. a sequence-receiver is required to provide `set_next` for all the value senders produced by the sequence operation. 
+`set_next` is a new customization point object for the receiver. 
+`set_next` is similar to `set_value`, but instead of completing the receiver, it signals the arrival of a new element in the sequence.
+`set_next` applies algorithms to a given sender of values and its function signature reads
+```cpp
+auto set_next(receiver auto& rcvr, sender auto&& item)
+  -> max-one-valued-sender-of<set_value_t()>;
+```
+Using a sender-based function signature instead of `void set_next(rcvr, values...)` allows `set_next` to be called without having values ready and gives fine-grained control over the elementwise operations for the sequence-operation.
+A sequence-receiver is required to provide `set_next` for all the item-senders produced by the sequence-operation.
 
-A sequence operation calls `set_next(receiver, valueSender)` with a sender that will produce the next value. `set_next` applies algorithms to the `valueSender` and returns the resulting sender.
+A sequence-sender or operation calls `set_next(receiver, valueSender)` with a sender that will produce the next value. `set_next` returns a resulting *next-sender*.
+The only valid `set_value` completion signature for *next-senders* is `set_value_t()`.
+
+The completion functions of a sequence-receiver can only be called once all started operations of the *next-senders* have completed. This agreement is referred to as the sequence-receiver contract.
 
 A sequence operation connects and starts the sender returned from each call to `set_next`.
 
-For lock-step sequences, the receiver that the sequence operation connected the sender to will call `set_next` from the 'set_value` completion.
+For so-called *lock-step* sequences, the receiver that the sequence operation connected the sender to will call `set_next` from the `set_value` completion.
 
 > NOTE: To prevent stack overflow, there needs to be a trampoline scheduler applied to each value sender. A tail-sender will be defined in a separate paper that can be used instead of a scheduler to stop stack overflow.
+
+## Sequence Sender
+
+Each sequence-sender is also a sender and provides an implementation of the `get_completion_signatures_t` customization point object.
+However, instead of using `connect` to connect to receivers, sequence senders use the `sequence_connect` customization point object to connect to sequence-receivers.
+`sequence_connect` returns an operation state.
+All sequence-senders complete with `set_value_t()` on their success path and the `completion_signatures` of a sequence sender describe the `completion_signatures` of the value sender passed to `set_next`.
+
 
 ## Sequences
 
